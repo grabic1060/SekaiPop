@@ -1,0 +1,2 @@
+-- Optional workspace assignments. The installer preserves your existing file.
+-- Kept present so Hyprland's Lua require() does not report a missing module.

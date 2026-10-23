@@ -152,6 +152,7 @@ SettingsPage {
         SettingToggle {
             icon: "deployed_code"
             label: "Count AUR updates"
+            visible: PackageUpdatesService.backend === "arch"
             detail: "paru or yay"
             checked: SettingsService.flag("updates.aur")
             onToggled: {

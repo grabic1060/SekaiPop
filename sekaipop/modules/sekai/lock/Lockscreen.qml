@@ -85,6 +85,7 @@ Scope {
     }
 
     WlSessionLock {
+        id: sessionLock
         locked: LockState.locked
 
         WlSessionLockSurface {
@@ -135,6 +136,8 @@ Scope {
     }
     IpcHandler {
         target: "lock"
+
+        function secure(): bool { return sessionLock.secure }
 
         function lock(): void {
             LockState.lock()

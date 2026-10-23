@@ -19,15 +19,21 @@
 #                       skip   = do not touch Hyprland at all
 #   --no-deps           do not install packages / services (only copy files)
 #   --with-tests        also copy the developer tests folder
+#   --utm               UTM guest tools and Qt OpenGL rendering profile (Debian)
 #   --restore           put back the Hyprland config that was backed up by the last run
 #   -h, --help
 #
-# Run as your normal user (it uses sudo where needed). Needs Arch / CachyOS / EndeavourOS for the packages.
+# Run as your normal user (it uses sudo where needed). Supports Arch-based systems and Debian 13 ARM64/AMD64.
 
 set -u
 HERE=$(cd "$(dirname "$0")" && pwd)
+DISTRO_ID=$( . /etc/os-release 2>/dev/null; echo "${ID:-unknown}" )
 
+<<<<<<< HEAD
 REPLACED=0; DRY=0; YES=0; RICE=""; HYPR=auto; NODEPS=0; WITH_TESTS=0; RESTORE=0; DEPS_ARGS=()
+=======
+DRY=0; YES=0; RICE=""; HYPR=auto; NODEPS=0; WITH_TESTS=0; RESTORE=0; UTM=0; DEPS_ARGS=()
+>>>>>>> d0c93bf (refactor: change platform to debian/arm64 qemu)
 while [ $# -gt 0 ]; do
     case "$1" in
         --dry-run) DRY=1 ;;
@@ -36,6 +42,7 @@ while [ $# -gt 0 ]; do
         --hypr) shift; HYPR=${1:-}; case "$HYPR" in full|merge|skip) ;; *) echo "--hypr needs full|merge|skip" >&2; exit 2 ;; esac ;;
         --no-deps) NODEPS=1 ;;
         --with-tests) WITH_TESTS=1 ;;
+        --utm) UTM=1 ;;
         --restore) RESTORE=1 ;;
         -h|--help) sed -n '2,25p' "$0"; exit 0 ;;
         --) shift; DEPS_ARGS=("$@"); break ;;
@@ -101,13 +108,6 @@ hypr_running() { [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && have hyprctl && hy
 
 banner "SekaiPop installer" "Quickshell + Hyprland desktop"
 
-# Anything left from when SekaiPop was called pjsekai (settings, presets, app-colour blocks, the
-# Hyprland overrides file and backups) is moved to the new name first. Does nothing otherwise.
-if [ -f "$HERE/sekaipop/scripts/system/migrate-from-pjsekai.sh" ]; then
-    if [ "$DRY" = 1 ]; then sh "$HERE/sekaipop/scripts/system/migrate-from-pjsekai.sh" --dry-run
-    else sh "$HERE/sekaipop/scripts/system/migrate-from-pjsekai.sh"; fi
-fi
-
 # ------------------------------------------------------------------ --restore
 if [ "$RESTORE" = 1 ]; then
     step "Restoring your previous Hyprland config"
@@ -146,7 +146,7 @@ ok "rice: $RICE ${D}(version $VERSION)${Z}"
 # Hyprland config: Lua needs Hyprland 0.55+
 HV=""
 if have hyprctl && hypr_running; then HV=$(hyprctl version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -1)
-elif have Hyprland; then HV=$(Hyprland --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -1); fi
+elif have Hyprland; then HV=$(sh "$RICE/scripts/system/hyprland-version.sh" | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -1); fi
 if [ -n "$HV" ]; then ok "Hyprland $HV"; else info "Hyprland: not found / version unknown"; fi
 HAVE_CFG=0; [ -f "$HYPR_DEST/hyprland.lua" ] || [ -f "$HYPR_DEST/hyprland.conf" ] && HAVE_CFG=1
 SRC_HYPR="$HERE/hypr"
@@ -165,21 +165,17 @@ if [ "$HYPR" = auto ]; then
         fi
     fi
 fi
-if [ "$HYPR" = full ] && [ -n "$HV" ] && ! ver_ge "$HV" 0.55; then
-    warn "Hyprland $HV is older than 0.55, which is the first with the Lua config this installer writes."
-    warn "Falling back to 'merge' (your hyprlang config stays; a small sekaipop_session.conf is added)."
-    HYPR=merge
-fi
 info "Hyprland config mode: $HYPR"
 
 # ------------------------------------------------------------------ 1. dependencies
 if [ "$NODEPS" = 0 ]; then
     step "1. Dependencies, fonts, services"
     FLAGS=()
+    [ "$UTM" = 0 ] || FLAGS+=(--utm)
     [ "$DRY" = 1 ] && FLAGS+=(--dry-run)
     [ "$YES" = 1 ] && FLAGS+=(--yes)
-    [ "$HYPR" != merge ] && FLAGS+=(--no-session)    # full/skip handle the session themselves
-    SEKAIPOP_FULL_INSTALL=1 bash "$HERE/install-deps.sh" "${FLAGS[@]}" "${DEPS_ARGS[@]}" || fail "install-deps.sh reported problems (see above)"
+    { [ "$HYPR" != merge ] || [ "$DISTRO_ID" = debian ]; } && FLAGS+=(--no-session)    # full/skip handle the session themselves
+    SEKAIPOP_FULL_INSTALL=1 bash "$HERE/install-deps.sh" "${FLAGS[@]}" "${DEPS_ARGS[@]}" || { echo "Dependency setup failed; shell and Hyprland config were not replaced." >&2; exit 1; }
 
     if [ "$HYPR" = full ] && have pacman; then
         # used by the keybinds / autostart of the preconfigured config
@@ -195,44 +191,64 @@ else
     step "1. Dependencies"; info "skipped (--no-deps)"
 fi
 
-# ------------------------------------------------------------------ 2. the rice
-step "2. The rice -> $QS_DEST"
-if [ -d "$QS_DEST" ] && [ "$(realpath "$QS_DEST")" = "$RICE" ]; then
-    ok "the rice is already in place (installing from the same folder)"
-elif [ -d "$QS_DEST" ] && diff -rq --exclude=tests --exclude=.git --exclude=.source "$RICE" "$QS_DEST" >/dev/null 2>&1; then
-    ok "the installed copy is already identical to this one"
+# Recheck after dependency installation: an older compositor may have been upgraded.
+if [ "$DRY" = 0 ]; then
+    HV=$(sh "$RICE/scripts/system/hyprland-version.sh" | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -1)
+    [ -n "$HV" ] && ver_ge "$HV" 0.55 || { echo "Hyprland 0.55+ required; configurations not replaced." >&2; exit 1; }
+fi
+
+# Prepare on the destination filesystem, then swap. A failed qsb/import check leaves the old copy intact.
+step "2. Prepare and install the shell -> $QS_DEST"
+if [ "$DRY" = 1 ]; then
+    info "would stage the shell, rebuild/validate all shaders and check QML imports before replacing $QS_DEST"
 else
-    if [ -e "$QS_DEST" ]; then
-        info "an existing copy is there: it is kept as $QS_DEST.bak-$TS"
-        ask "Replace it with version $VERSION?" || { echo "Stopped by you."; exit 0; }
-        run mv "$QS_DEST" "$QS_DEST.bak-$TS" || fail "could not back up the old rice"
+    mkdir -p "$(dirname "$QS_DEST")" || exit 1
+    STAGE=$(mktemp -d "$(dirname "$QS_DEST")/.sekaipop-stage.XXXXXX") || exit 1
+    trap 'rm -rf "${STAGE:-}"' EXIT
+    cp -a "$RICE/." "$STAGE/" || exit 1
+    rm -rf "$STAGE/.git"
+    [ "$WITH_TESTS" = 1 ] || rm -rf "$STAGE/tests"
+    bash "$STAGE/scripts/system/prepare-runtime.sh" "$STAGE" || exit 1
+    bash "$STAGE/scripts/system/check-qml.sh" "$STAGE" || exit 1
+    if git -C "$HERE" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        COMMIT=$(git -C "$HERE" rev-parse HEAD)
+        REPO=${SEKAIPOP_REPO:-$(git -C "$HERE" config --get remote.origin.url)}
+        REF=${SEKAIPOP_REF:-$(git -C "$HERE" symbolic-ref --short -q HEAD || git -C "$HERE" describe --tags --exact-match 2>/dev/null || echo HEAD)}
+        # A local, unpublished port must never silently update back to the upstream repository.
+        MANAGED=yes
+        if [ -n "$(git -C "$HERE" status --porcelain)" ] || [ "$REF" = HEAD ]; then MANAGED=no; fi
+        printf 'commit=%s\nrepo=%s\nref=%s\nmanaged=%s\n' "$COMMIT" "$REPO" "$REF" "$MANAGED" > "$STAGE/.source"
+    elif [ -n "${SEKAIPOP_REPO:-}" ] && [ -n "${SEKAIPOP_REF:-}" ]; then
+        printf 'repo=%s\nref=%s\nmanaged=yes\n' "$SEKAIPOP_REPO" "$SEKAIPOP_REF" > "$STAGE/.source"
+    else
+        printf 'managed=no\n' > "$STAGE/.source"
     fi
+    if [ -e "$QS_DEST" ]; then
+        ask "Replace the installed shell? It is kept as $QS_DEST.bak-$TS" || exit 0
+        # Do not move the checkout we are currently executing from.
+        [ "$(realpath "$QS_DEST")" != "$RICE" ] || { echo 'Run the installer from a separate checkout.' >&2; exit 1; }
+        mv "$QS_DEST" "$QS_DEST.bak-$TS" || exit 1
+    fi
+<<<<<<< HEAD
     run mkdir -p "$(dirname "$QS_DEST")"
     run cp -a "$RICE" "$QS_DEST" && REPLACED=1 || fail "could not copy the rice"
     run rm -rf "$QS_DEST/.git"
     [ "$WITH_TESTS" = 1 ] || run rm -rf "$QS_DEST/tests"
     [ "$DRY" = 1 ] || ok "copied (tests folder $([ "$WITH_TESTS" = 1 ] && echo kept || echo left out))"
-fi
-
-# Remember which commit these files came from, so About / Update -> "Update now" can tell what is newer.
-# (Only when installing from a git checkout, which is what get.sh does; a zip has no commit to record.)
-if [ "$DRY" != 1 ] && [ -d "$HERE/.git" ] && have git && [ -d "$QS_DEST" ] && [ "$(realpath "$QS_DEST")" != "$RICE" ]; then
-    {
-        echo "commit=$(git -C "$HERE" rev-parse HEAD)"
-        echo "repo=$(git -C "$HERE" config --get remote.origin.url)"
-        echo "ref=$(git -C "$HERE" rev-parse --abbrev-ref HEAD)"
-    } > "$QS_DEST/.source" 2>/dev/null || true
-fi
-
-# shaders: .qsb files are built with Qt 6.12 and older Qt cannot read them
-QTV=$(pacman -Q qt6-base 2>/dev/null | awk '{print $2}' | grep -oE '^[0-9]+\.[0-9]+')
-if [ -n "$QTV" ] && ! ver_ge "$QTV" 6.12; then
-    info "Qt $QTV is older than 6.12: rebuilding the shaders once"
-    if [ -f "$QS_DEST/shaders/compile-shaders.sh" ]; then
-        run bash "$QS_DEST/shaders/compile-shaders.sh" || fail "shader build failed (needs qt6-shadertools)"
+=======
+    if ! mv "$STAGE" "$QS_DEST"; then
+        [ ! -e "$QS_DEST.bak-$TS" ] || mv "$QS_DEST.bak-$TS" "$QS_DEST"
+        exit 1
     fi
-elif [ -n "$QTV" ]; then
-    ok "Qt $QTV: the shipped shaders work as they are"
+    STAGE=""
+>>>>>>> d0c93bf (refactor: change platform to debian/arm64 qemu)
+fi
+
+# Anything left from when SekaiPop was called pjsekai (settings, presets, app-colour blocks, the
+# Hyprland overrides file and backups) is moved to the new name first. Does nothing otherwise.
+if [ -f "$HERE/sekaipop/scripts/system/migrate-from-pjsekai.sh" ]; then
+    if [ "$DRY" = 1 ]; then sh "$HERE/sekaipop/scripts/system/migrate-from-pjsekai.sh" --dry-run
+    else sh "$HERE/sekaipop/scripts/system/migrate-from-pjsekai.sh"; fi
 fi
 
 # monitors.lua is made for THIS machine, never shipped: a file written for someone else's screens
@@ -294,6 +310,9 @@ if [ "$OURS" = 1 ]; then BACKUP_TO="$CFG/hypr.sekaipop-previous"; else BACKUP_TO
 case "$HYPR" in
   skip) info "left alone (--hypr skip). Start the shell yourself with:  qs -c sekaipop" ;;
   merge)
+    if [ "$DISTRO_ID" = debian ] && [ "$NODEPS" = 0 ]; then
+        bash "$HERE/install/session.sh" "$DRY" "$UTM" || exit 1
+    fi
     if [ "$NODEPS" = 1 ]; then
         info "your config was kept. No session file was written because of --no-deps; add it with:"
         info "  ./install-deps.sh --no-update --core-only"
@@ -310,7 +329,14 @@ case "$HYPR" in
         mkdir -p "$CFG"
         NEW=$(mktemp -d "$CFG/.hypr-sekaipop-new.XXXXXX") || { fail "could not create a temporary folder in $CFG"; NEW=""; }
         if [ -n "$NEW" ]; then
-            cp -a "$SRC_HYPR/." "$NEW/"
+            cp -a "$SRC_HYPR/." "$NEW/" || exit 1
+            if have dpkg-query && dpkg-query -W -f='${Status}' qt6ct 2>/dev/null | grep -q 'install ok installed'; then
+                sed -i 's/hl.env("QT_QPA_PLATFORMTHEME", "kde")/hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")/' "$NEW/hyprland/env.lua"
+            fi
+            if [ "$UTM" = 1 ]; then
+                printf '\nhl.env("QSG_RHI_BACKEND", "opengl")\n' >> "$NEW/hyprland/env.lua"
+                printf '\nhl.on("hyprland.start", function() hl.exec_cmd("spice-vdagent") end)\n' >> "$NEW/hyprland/execs.lua"
+            fi
             for f in monitors.lua workspaces.lua sekaipop_overrides.lua; do
                 [ -f "$HYPR_DEST/$f" ] && cp -a "$HYPR_DEST/$f" "$NEW/$f"
             done
@@ -325,7 +351,7 @@ case "$HYPR" in
             find "$NEW" -name '*.sh' -exec chmod +x {} +
             if [ -e "$HYPR_DEST" ]; then
                 [ "$OURS" = 1 ] && rm -rf "$BACKUP_TO"      # only one rolling copy of a previous sekaipop config
-                mv "$HYPR_DEST" "$BACKUP_TO" || fail "could not back up $HYPR_DEST"
+                mv "$HYPR_DEST" "$BACKUP_TO" || { echo "Could not back up $HYPR_DEST" >&2; exit 1; }
                 info "old config kept as $BACKUP_TO"
             fi
             if mv "$NEW" "$HYPR_DEST"; then
@@ -353,7 +379,7 @@ if [ "${#FAILED[@]}" -gt 0 ]; then
     for m in "${FAILED[@]}"; do printf '    %s%s%s %s\n' "$R" "$G_BAD" "$Z" "$m"; done
 fi
 if [ "$DRY" = 0 ] && [ -f "$HERE/check-deps.sh" ]; then
-    printf '\n'; SEKAIPOP_DIR="$QS_DEST" bash "$HERE/check-deps.sh" --core
+    printf '\n'; SEKAIPOP_DIR="$QS_DEST" bash "$HERE/check-deps.sh" --core || fail "Core dependency check failed"
 fi
 
 # A shell that is already running keeps the old files: the folder it watches was moved

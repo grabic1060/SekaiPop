@@ -3,6 +3,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Pam
 import qs.services
+import qs.modules.common
 
 // The password side of the lockscreen: what's been typed, and asking
 // PAM whether it's right. Shared by every monitor's LockSurface (the
@@ -112,7 +113,7 @@ Scope {
 
     Process {
         id: sleepAction
-        command: ["sh", "-c", "systemctl suspend || loginctl suspend"]
+        command: ["bash", Directories.script("system/secure-suspend.sh"), "suspend"]
     }
 
     function typeText(t) {

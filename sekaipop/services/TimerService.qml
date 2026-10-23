@@ -72,10 +72,10 @@ Singleton {
     readonly property string shownText: {
         const s = root.shownMode === "pomodoro" ? root.pomLeft
             : (root.shownMode === "timer" ? root.timerLeft : root.swElapsed)
-        return root.short(s, root.shownMode === "stopwatch")
+        return root.shortText(s, root.shownMode === "stopwatch")
     }
 
-    function short(seconds, up) {
+    function shortText(seconds, up) {
         const s = Math.max(0, up ? Math.floor(seconds) : Math.ceil(seconds))
         if (s >= 3600)
             return Math.floor(s / 3600) + "h"

@@ -75,7 +75,7 @@ repo="$SEKAIPOP_REPO"
 ref="$SEKAIPOP_REF"
 [ -n "$ref" ] || ref=$(mark ref)
 { [ -n "$ref" ] && [ "$ref" != HEAD ]; } || ref=main
-is_managed() { ! is_git && have_git; }
+is_managed() { ! is_git && have_git && [ "$(mark managed)" != no ]; }
 short() { printf '%s' "$1" | cut -c1-7; }
 
 remote_head() {
@@ -105,11 +105,12 @@ apply_managed() {
     [ -d "$real/tests" ] || rm -rf "$stage/tests"
     { echo "commit=$commit"; echo "repo=$repo"; echo "ref=$ref"; } > "$stage/.source"
 
-    # Qt older than 6.12 cannot read the shipped .qsb shaders: build them again, as install.sh does.
-    qt=$(pacman -Q qt6-base 2>/dev/null | awk '{print $2}' | grep -oE '^[0-9]+\.[0-9]+')
-    if [ -n "$qt" ] && [ "$(printf '%s\n6.12\n' "$qt" | sort -V | head -n 1)" != 6.12 ] && [ -f "$stage/shaders/compile-shaders.sh" ]; then
-        bash "$stage/shaders/compile-shaders.sh" >/dev/null 2>&1 \
-            || { rm -rf "$stage"; echo "the shaders didn't build (needs qt6-shadertools)"; return 1; }
+    # Never accept an upstream update that drops the port's runtime gate.
+    if [ -f "$here/scripts/system/prepare-runtime.sh" ]; then
+        [ -f "$stage/scripts/system/prepare-runtime.sh" ] && [ -f "$stage/scripts/system/check-qml.sh" ] \
+            || { rm -rf "$stage"; echo "Update lacks the Debian runtime support; use the port release source."; return 1; }
+        bash "$stage/scripts/system/prepare-runtime.sh" "$stage" && bash "$stage/scripts/system/check-qml.sh" "$stage" \
+            || { rm -rf "$stage"; echo "Runtime validation failed; existing installation retained."; return 1; }
     fi
 
     rm -rf "$old"
@@ -186,7 +187,21 @@ case "$cmd" in
     apply)
         if is_git; then
             has_up || { echo "this clone has no upstream branch"; exit 1; }
-            out=$(git -C "$root" pull --ff-only 2>&1); rc=$?
+            [ -z "$(git -C "$root" status --porcelain)" ] || { echo "Local changes present; update from your port checkout manually."; exit 1; }
+            git -C "$root" fetch || exit 1
+            candidate=$(git -C "$root" rev-parse '@{u}') || exit 1
+            git -C "$root" merge-base --is-ancestor HEAD "$candidate" || { echo "Upstream diverged"; exit 1; }
+            if [ -f "$here/scripts/system/prepare-runtime.sh" ]; then
+                validation=$(mktemp -d) || exit 1
+                trap 'rm -rf "$validation"' EXIT
+                git -C "$root" archive "$candidate" | tar -x -C "$validation" || exit 1
+                staged="$validation/sekaipop"
+                [ -d "$staged" ] || staged="$validation"
+                [ -f "$staged/scripts/system/prepare-runtime.sh" ] || { echo "Update lacks port support"; exit 1; }
+                bash "$staged/scripts/system/prepare-runtime.sh" "$staged" && bash "$staged/scripts/system/check-qml.sh" "$staged" || exit 1
+            fi
+            out=$(git -C "$root" merge --ff-only "$candidate" 2>&1); rc=$?
+            if [ "$rc" = 0 ] && [ -n "${staged:-}" ]; then cp -a "$staged/shaders/." "$here/shaders/" || exit 1; fi
             printf '%s\n' "$out" | tail -n 1
             exit "$rc"
         elif is_managed; then

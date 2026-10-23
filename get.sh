@@ -22,6 +22,18 @@
 
 set -euo pipefail
 
+# A checkout is already the requested source, including uncommitted port changes.
+LOCAL_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || true)
+if [ -n "$LOCAL_DIR" ] && [ -f "$LOCAL_DIR/install.sh" ] && [ -f "$LOCAL_DIR/sekaipop/shell.qml" ]; then
+    exec bash "$LOCAL_DIR/install.sh" "$@"
+fi
+for arg in "$@"; do
+    if [ "$arg" = --dry-run ]; then
+        printf 'Would download %s (%s), then run install.sh --dry-run. No files downloaded.\n' "${SEKAIPOP_REPO:-https://github.com/Blapples/SekaiPop.git}" "${SEKAIPOP_REF:-main}"
+        exit 0
+    fi
+done
+
 REPO=${SEKAIPOP_REPO:-https://github.com/Blapples/SekaiPop.git}
 REF=${SEKAIPOP_REF:-main}
 KEEP=${SEKAIPOP_DIR:-}
@@ -60,7 +72,7 @@ elif have curl && have tar; then
     TAR="${REPO%.git}/archive/${REF}.tar.gz"
     curl -fsSL "$TAR" | tar -xz --strip-components=1 -C "$DIR"
 else
-    die "Need git, or curl and tar. On Arch:  sudo pacman -S git"
+    die "Need git, or curl and tar. Install git, or curl and tar with your distribution package manager"
 fi
 [ -f "$DIR/install.sh" ] || die "The download has no install.sh: wrong SEKAIPOP_REF or SEKAIPOP_REPO?"
 chmod +x "$DIR/install.sh" "$DIR/install-deps.sh" "$DIR/check-deps.sh" 2>/dev/null || true

@@ -1905,8 +1905,8 @@ Scope {
     //   pendingAfterLock   "sleep" / "hibernate" while waiting, else ""
     //   settleTimer        a beat after "locked" so the lock surface has
     //                      really been drawn before the screen goes away
-    //   lockSafety         if the lock never engages, suspend anyway — a
-    //                      button that silently does nothing is worse
+    //   lockSafety         invokes the secure-lock gate after the transition timeout;
+    //                      the gate refuses power actions without compositor confirmation
     // Already locked: it just goes straight to sleep.
     property string pendingAfterLock: ""
 
@@ -1989,12 +1989,12 @@ Scope {
 
     Process {
         id: sleepAction
-        command: ["sh", "-c", "systemctl suspend || loginctl suspend"]
+        command: ["bash", Directories.script("system/secure-suspend.sh"), "suspend"]
     }
 
     Process {
         id: hibernateAction
-        command: ["sh", "-c", "systemctl hibernate || loginctl hibernate"]
+        command: ["bash", Directories.script("system/secure-suspend.sh"), "hibernate"]
     }
 
     Process {
