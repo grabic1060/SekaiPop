@@ -220,10 +220,12 @@ Singleton {
         }
         onExited: code => {
             if (code === 0) {
-                // The new files are on disk: rebuild the shell from them. `updating`
-                // stays true on purpose, so the file watcher (see shell.qml) stays
-                // paused until this reload replaces everything.
-                Quickshell.reload(true)
+                // The new files are on disk: start the shell again from them, as a new
+                // process. A reload in this one can keep failing on Qt state left from
+                // the old files ("FaceKey is not a type", issue #79), which only a new
+                // process clears; see restart-shell.sh. `updating` stays true on
+                // purpose, so the file watcher (see shell.qml) stays paused until then.
+                Quickshell.execDetached(["setsid", "sh", Directories.script("system/restart-shell.sh"), Quickshell.shellDir])
             } else {
                 root.updating = false
                 root.updateMessage = root.updateMessage || "the update didn't apply"

@@ -397,7 +397,9 @@ PanelWindow {
                         y: 25
                         width: parent.width - x
                         elide: Text.ElideRight
-                        text: win.tab === "theme" && themeBoard.tuning
+                        text: PanelImages.framing !== ""
+                            ? "Framing: pick the part that shows."
+                            : win.tab === "theme" && themeBoard.tuning
                             ? (ThemeService.matugenBusy ? "Re-colouring from the wallpaper\u2026" : "Tune the wallpaper colours.")
                             : win.tab === "theme"
                             ? "Pick the colours the shell wears."
@@ -421,9 +423,10 @@ PanelWindow {
                 }
 
                 HintRow {
-                    keyText: win.tab === "bar" ? "" : "L"
-                    keyIcon: win.tab === "bar" ? "open_with" : ""
-                    label: win.tab === "bar" ? "Drag: move, or into OFF"
+                    keyText: PanelImages.framing !== "" ? "" : (win.tab === "bar" ? "" : "L")
+                    keyIcon: PanelImages.framing !== "" ? "open_with" : (win.tab === "bar" ? "open_with" : "")
+                    label: PanelImages.framing !== "" ? "Drag: move the picture"
+                        : win.tab === "bar" ? "Drag: move, or into OFF"
                         : (win.tab === "theme" && themeBoard.tuning ? "Click: changes it live"
                         : win.tab === "theme" ? "Click: wear this theme"
                         : (win.tab === "presets" ? "Click: wear this look"
@@ -431,9 +434,10 @@ PanelWindow {
                 }
 
                 HintRow {
-                    keyText: win.tab === "bar" ? "L" : (win.tab === "theme" && themeBoard.tuning ? "Esc" : (win.tab === "theme" || win.pickTab ? "" : "R"))
-                    keyIcon: win.tab === "theme" && themeBoard.tuning ? "" : (win.tab === "theme" || win.pickTab ? "mouse" : "")
-                    label: win.tab === "bar" ? "Click: next zone / back on"
+                    keyText: PanelImages.framing !== "" ? "" : (win.tab === "bar" ? "L" : (win.tab === "theme" && themeBoard.tuning ? "Esc" : (win.tab === "theme" || win.pickTab ? "" : "R")))
+                    keyIcon: PanelImages.framing !== "" ? "mouse" : (win.tab === "theme" && themeBoard.tuning ? "" : (win.tab === "theme" || win.pickTab ? "mouse" : ""))
+                    label: PanelImages.framing !== "" ? "Wheel: zoom in and out"
+                        : win.tab === "bar" ? "Click: next zone / back on"
                         : (win.tab === "theme" && themeBoard.tuning ? "Back to the themes"
                         : win.tab === "theme" ? "Wheel: more themes"
                         : (win.tab === "presets" ? "Right click twice: delete"
@@ -444,11 +448,12 @@ PanelWindow {
                 // its controls; in the controls, what the pin does.
                 HintRow {
                     readonly property bool matugenOn: ThemeService.themeFor(themeBoard.screenName) === "matugen" && ThemeService.matugenInstalled
-                    keyText: win.tab === "bar" ? "R" : (win.tab === "theme" && !themeBoard.tuning && matugenOn ? "L" : "")
-                    keyIcon: win.tab === "bar" ? ""
+                    keyText: PanelImages.framing !== "" ? "Esc" : (win.tab === "bar" ? "R" : (win.tab === "theme" && !themeBoard.tuning && matugenOn ? "L" : ""))
+                    keyIcon: PanelImages.framing !== "" ? "" : win.tab === "bar" ? ""
                         : (win.tab === "theme" ? (themeBoard.tuning ? "push_pin" : (matugenOn ? "" : "wallpaper"))
                         : (win.tab === "presets" ? "sync" : (win.pickTab ? "check" : "open_with")))
-                    label: win.tab === "bar" ? "Right click: remove"
+                    label: PanelImages.framing !== "" ? "Esc: cancel, as it was"
+                        : win.tab === "bar" ? "Right click: remove"
                         : (win.tab === "theme" && themeBoard.tuning ? "Pin: keep an accent"
                         : win.tab === "theme" && matugenOn ? "Matugen again: tune it"
                         : win.tab === "theme" ? "Matugen: from wallpaper"

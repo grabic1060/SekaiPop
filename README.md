@@ -305,6 +305,7 @@ Volume and brightness keys go through the shell's on-screen display.
 | Problem | Try |
 |---|---|
 | Shell doesn't start | Run `qs -c sekaipop log`, and make sure you logged into the plain **Hyprland** session, not uwsm |
+| "Failed to load configuration" after an update ("... is not a type" for something the file declares) | Restart the shell, don't reload it: **Restart shell** on the error card, or `qs kill -c sekaipop; qs -c sekaipop -d`. A reload stays inside the same process, which can hold on to the old files' state (issue #79) |
 | Black screen after install | `./install.sh --restore`, then read `~/.cache/sekaipop/hypr-errors.log` |
 | Icons are missing | Install `ttf-material-symbols-variable`, then `fc-cache -f` |
 | Shaders or transitions don't draw | Qt older than 6.12 needs the shaders rebuilt: `bash ~/.config/quickshell/sekaipop/shaders/compile-shaders.sh` (needs `qt6-shadertools`) |

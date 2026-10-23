@@ -162,6 +162,7 @@ Item {
 
     BarTip {
         shown: area.containsMouse
+        pressed: area.pressed
         text: root.tipText
         barPosition: root.barPosition
     }

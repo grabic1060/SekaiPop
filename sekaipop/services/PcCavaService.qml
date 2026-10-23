@@ -66,7 +66,7 @@ Singleton {
     Process {
         id: cava
         running: root.wanted
-        command: ["nice", "-n", "5", "cava", "-p", root.conf]
+        command: ["setpriv", "--pdeathsig", "TERM", "nice", "-n", "5", "cava", "-p", root.conf]
 
         stdout: SplitParser {
             onRead: data => {

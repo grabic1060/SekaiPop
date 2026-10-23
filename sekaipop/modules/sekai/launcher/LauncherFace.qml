@@ -276,6 +276,8 @@ Item {
         width: face.width - 2 * mt.phoneScreenInset
         height: face.height - 2 * mt.phoneScreenInset
         path: face.lcdPath
+        // A picture of your own is framed (Framing.js); the desktop's wallpaper is not.
+        framing: PanelImages.phoneMode === "picture" ? PanelImages.framingFor("phone") : null
         renderScale: face.renderScale
         // Only decoded while this screen is the one showing.
         active: face.visible

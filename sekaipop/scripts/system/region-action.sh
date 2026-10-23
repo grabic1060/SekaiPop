@@ -142,14 +142,17 @@ case "$mode" in
         [ -n "$geom" ] && [ -n "$file" ] || exit 2
         have wf-recorder || { notify -i material:videocam "Recording" "wf-recorder is not installed"; exit 127; }
         mkdir -p "$(dirname "$file")" || exit 1
+        # An NVIDIA card encodes on the GPU (NVENC): ~20 % of one core instead of 3-4 cores.
+        enc=""
+        [ -e /dev/nvidiactl ] && enc="-c h264_nvenc -p rc=vbr -p cq=21 -p b=0 -p preset=p5"
         case "$sound" in
             system)
                 sink=$(pactl get-default-sink 2>/dev/null)
-                if [ -n "$sink" ]; then exec wf-recorder -g "$geom" --audio="$sink.monitor" -f "$file"; fi
-                exec wf-recorder -g "$geom" --audio -f "$file"
+                if [ -n "$sink" ]; then exec wf-recorder $enc -g "$geom" --audio="$sink.monitor" -f "$file"; fi
+                exec wf-recorder $enc -g "$geom" --audio -f "$file"
                 ;;
-            mic)  exec wf-recorder -g "$geom" --audio -f "$file" ;;
-            *)    exec wf-recorder -g "$geom" -f "$file" ;;
+            mic)  exec wf-recorder $enc -g "$geom" --audio -f "$file" ;;
+            *)    exec wf-recorder $enc -g "$geom" -f "$file" ;;
         esac
         ;;
     rules)

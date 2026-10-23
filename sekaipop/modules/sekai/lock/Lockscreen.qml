@@ -109,7 +109,7 @@ Scope {
         id: logindWatcher
         running: true
         command: [
-            "dbus-monitor", "--system",
+            "setpriv", "--pdeathsig", "TERM", "dbus-monitor", "--system",
             "type='signal',sender='org.freedesktop.login1',interface='org.freedesktop.login1.Session',member='Lock'"
         ]
         stdout: SplitParser {

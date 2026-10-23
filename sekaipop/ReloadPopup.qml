@@ -20,6 +20,11 @@ import qs.modules.common.widgets
 //              is why this can still show. It stays until you dismiss it
 //              (X / Dismiss) or a later reload succeeds; "Copy error" puts
 //              the text on the clipboard (needs wl-copy from wl-clipboard).
+//              "Restart shell" starts the shell again as a new process: a
+//              reload that keeps failing on files that are fine (after an
+//              update, "... is not a type" for something the file declares,
+//              issue #79) is Qt state left in this process, and only a new
+//              one clears it. See scripts/system/restart-shell.sh.
 //
 // It replaces Quickshell's own reload popup (Quickshell.inhibitReloadPopup(),
 // called on builds that have it) so you don't get two. Shown on whichever
@@ -65,6 +70,10 @@ Scope {
     function dismiss() {
         hideTimer.stop()
         root.open = false
+    }
+
+    function restartShell() {
+        Quickshell.execDetached(["setsid", "sh", Directories.script("system/restart-shell.sh"), Quickshell.shellDir])
     }
 
     function copyError() {
@@ -369,6 +378,34 @@ Scope {
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
                                     onClicked: root.copyError()
+                                }
+                            }
+
+                            Rectangle {
+                                width: restartLabel.implicitWidth + 28
+                                height: 34
+                                radius: 17
+                                color: restartArea.containsMouse ? Theme.surfaceHover : "transparent"
+                                border.width: 2
+                                border.color: Theme.line
+                                antialiasing: true
+
+                                Text {
+                                    id: restartLabel
+                                    anchors.centerIn: parent
+                                    text: "Restart shell"
+                                    color: Theme.ink
+                                    font.family: Theme.fontFamily
+                                    font.pixelSize: 14
+                                    font.weight: Font.DemiBold
+                                }
+
+                                MouseArea {
+                                    id: restartArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.restartShell()
                                 }
                             }
                         }

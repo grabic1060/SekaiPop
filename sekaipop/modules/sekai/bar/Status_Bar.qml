@@ -925,6 +925,7 @@ Item {
             vertical: status_Bar.vertical
             compact: status_Bar.utilFlyout
             popupOpen: status_Bar.utilPopupOpen
+            barPosition: status_Bar.barPosition
             onToggleRequested: status_Bar.utilClicked()
             Layout.alignment: status_Bar.crossAlign
             onWallpapersRequested: status_Bar.wallpapersToggleRequested()
@@ -942,6 +943,7 @@ Item {
             transform: Translate { y: status_Bar.liftY }
             cpuPercent: status_Bar.cpuPercent
             memPercent: status_Bar.memPercent
+            barPosition: status_Bar.barPosition
             onClicked: status_Bar.resourcesClicked()
         }
 
@@ -984,6 +986,7 @@ Item {
             percentage: status_Bar.batteryPercentage
             isCharging: status_Bar.batteryCharging
             isLow: status_Bar.batteryLow
+            barPosition: status_Bar.barPosition
             onClicked: status_Bar.batteryClicked()
         }
 
@@ -997,6 +1000,7 @@ Item {
             Layout.alignment: status_Bar.crossAlign
             transform: Translate { y: status_Bar.liftY }
             layoutCode: status_Bar.keyboardLayoutCode
+            barPosition: status_Bar.barPosition
             onClicked: status_Bar.keyboardLayoutClicked()
         }
 
@@ -1010,6 +1014,7 @@ Item {
             transform: Translate { y: status_Bar.liftY }
             count: status_Bar.notificationCount
             doNotDisturb: status_Bar.notificationsMuted
+            barPosition: status_Bar.barPosition
             onClicked: status_Bar.notificationsToggleRequested()
         }
 
@@ -1069,6 +1074,7 @@ Item {
             transform: Translate { y: status_Bar.liftY }
             text: status_Bar.weatherTemperature
             iconName: status_Bar.weatherIconName
+            barPosition: status_Bar.barPosition
             onClicked: status_Bar.weatherClicked()
         }
 
@@ -1084,6 +1090,7 @@ Item {
             Layout.alignment: status_Bar.crossAlign
             transform: Translate { y: status_Bar.liftY }
             text: status_Bar.dateText
+            barPosition: status_Bar.barPosition
             onClicked: status_Bar.dateClicked()
         }
 

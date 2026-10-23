@@ -56,7 +56,7 @@ Item {
     // A line that is only there (a message, not a lyric): no singing, no marker.
     property bool still: false
     // Whole line at once: the line lights up when it starts, and there is no word hop, no
-    // squash and no bouncing marker (LyricsService.lineOnly).
+    // squash and no bouncing marker (LyricsService.lineOnly, which is Word by word off).
     property bool lineOnly: false
     // Word timing from an enhanced lyrics file (LyricsMath.spansFor); empty for most.
     property var marks: []

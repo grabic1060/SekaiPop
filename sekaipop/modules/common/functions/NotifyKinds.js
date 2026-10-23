@@ -24,7 +24,7 @@ var KINDS = {
     text_snippet: 0, colorize: 0,
     // Cute
     videocam: 1, fiber_manual_record: 1, error: 1, warning: 1,
-    image_not_supported: 1, report: 1,
+    image_not_supported: 1, report: 1, battery_alert: 1,
     // Happy
     alarm: 2, timer: 2, schedule: 2, notifications: 2, bolt: 2,
     // Mysterious

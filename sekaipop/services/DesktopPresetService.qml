@@ -4,6 +4,7 @@ import Quickshell
 import Quickshell.Io
 import qs.modules.common
 import "../modules/common/functions/PresetParts.js" as PP
+import "../modules/common/functions/Framing.js" as FR
 
 // Desktop presets: save the whole look of the desktop under a name, wear it
 // again with one click. They live on the PRESETS tab of Edit Desktop's shelf
@@ -130,8 +131,10 @@ Singleton {
     // ===== what a preset leaves alone =====
     readonly property var keepExact: [
         "time.use24h",
+        "pictures.framing",    // belongs to each picture: the `images` part carries it (imageEntry)
         "notify.on",           // do-not-disturb is the person's, not the look's
         "notify.quietFullscreen", // so is "quiet while a window is fullscreen"
+        "battery.alerts",      // and whether the low-battery warnings are on
         "weather.fahrenheit",
         "weather.location",
         "calendar.marks",
@@ -220,7 +223,13 @@ Singleton {
         const from = root.baseName(path)
         const dot = from.lastIndexOf(".")
         const ext = dot >= 0 ? "." + from.slice(dot + 1).toLowerCase() : ""
-        return { file: kind + ext, from: from }
+        const entry = { file: kind + ext, from: from }
+        // Its framing, when it has one (a centred picture adds nothing, so a preset saved
+        // before framing existed still reads as the look you are wearing).
+        const f = PanelImages.framingFor(kind)
+        if (!FR.isCentred(f))
+            entry.framing = { zoom: f.zoom, panX: f.panX, panY: f.panY }
+        return entry
     }
 
     // The custom pictures: on / off, and (once the saved frames have been read back, or a
@@ -1168,8 +1177,14 @@ Singleton {
             if (typeof img !== "object" || typeof img.file !== "string" || img.file === "")
                 continue
             const from = typeof img.from === "string" ? img.from : ""
-            if (from !== "" && root.baseName(worn) === from)
+            // The framing that comes with it (none: centred, as a preset from before framing).
+            const framing = img.framing && typeof img.framing === "object" ? img.framing : null
+            if (from !== "" && root.baseName(worn) === from) {
+                // Already this picture: only its framing may differ.
+                PanelImages.setFraming(kind, framing)
                 continue
+            }
+            root.pendingFraming[kind] = framing
             args.push(kind, img.file, from)
         }
         if (args.length > 0)
@@ -1185,12 +1200,22 @@ Singleton {
             onStreamFinished: {
                 for (const line of text.split("\n")) {
                     const sp = line.indexOf(" ")
-                    if (sp > 0)
-                        PanelImages.assign(line.slice(0, sp), line.slice(sp + 1))
+                    if (sp > 0) {
+                        const kind = line.slice(0, sp)
+                        PanelImages.assign(kind, line.slice(sp + 1))
+                        // The copy came back under a new name: frame that one.
+                        if (kind in root.pendingFraming) {
+                            PanelImages.setFraming(kind, root.pendingFraming[kind])
+                            delete root.pendingFraming[kind]
+                        }
+                    }
                 }
             }
         }
     }
+
+    // The framing of each picture a preset is putting back, until its copy is in place.
+    property var pendingFraming: ({})
 
     // Puts a preset's image frames on. The pictures come back out of <name>.frames/ into the
     // data folder first (preset-state.sh restore-frames prints where each one is now; one

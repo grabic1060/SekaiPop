@@ -234,6 +234,15 @@ Scope {
     // how long the whole ring takes (ms). 0 for a plain stop.
     property real flipWobble: 2.5
     property int flipRingMs: 380
+    // The two phone bodies are drawn on their light turn settings (PhoneBody `turnLite`: a
+    // smaller picture, 2 samples, no mip chain) while they turn. The turn itself is over
+    // after flipMs, but the ring-out above keeps both bodies redrawing every frame for about
+    // flipRingMs more, and that used to run on the heavier "moving" settings: at the moment
+    // the turn landed both pictures were resized (graphics memory re-made) and redrawn
+    // larger, with a mip chain, in the middle of the ring: the hitch you feel at the end of
+    // the turn. true = stay on the light settings until the ring has finished, then go to
+    // the full ones once, with everything still. false = the old behaviour.
+    property bool ringKeepsLite: true
     // Which way the first swing goes (the way the phone was turning).
     property real ringSign: 1
 
@@ -2486,7 +2495,7 @@ Scope {
 
                     // Rolled up to a quarter turn on its way into the Settings:
                     // its picture has to be big enough to hold that.
-                    turnRoll: stage.flipping ? -90 : 0
+                    turnRoll: (stage.flipping || (root.ringKeepsLite && ring.running)) ? -90 : 0
 
                     // Turned while it's coming out of / going into the
                     // pocket. These change what's drawn, not the size...
@@ -2526,8 +2535,13 @@ Scope {
                         wallpaperPath: PanelImages.phoneWallpaperFor(root.targetScreen ? root.targetScreen.name : "")
                         bannerSource: PanelImages.banner !== "" ? PanelImages.banner : root.bannerSource
                         avatarSource: PanelImages.avatar !== "" ? PanelImages.avatar : root.avatarSource
-                        onBannerPickRequested: PanelImages.pick("banner")
-                        onAvatarPickRequested: PanelImages.pick("avatar")
+                        bannerFraming: PanelImages.banner !== "" ? PanelImages.framingFor("banner") : null
+                        avatarFraming: PanelImages.avatar !== "" ? PanelImages.framingFor("avatar") : null
+                        wallpaperFraming: PanelImages.phoneMode === "picture" ? PanelImages.framingFor("phone") : null
+                        onBannerPickRequested: PanelImages.pick("banner", root.targetScreen ? root.targetScreen.name : "")
+                        onAvatarPickRequested: PanelImages.pick("avatar", root.targetScreen ? root.targetScreen.name : "")
+                        onBannerFrameRequested: PanelImages.frame("banner", false, root.targetScreen ? root.targetScreen.name : "")
+                        onAvatarFrameRequested: PanelImages.frame("avatar", false, root.targetScreen ? root.targetScreen.name : "")
                         onBannerResetRequested: PanelImages.clear("banner")
                         onAvatarResetRequested: PanelImages.clear("avatar")
 
@@ -2576,6 +2590,7 @@ Scope {
                         notifications: root.notificationSource.entries
                         alertEntry: root.notificationSource.toast
                         alertShown: root.notificationSource.toastActive
+                        alertOnly: root.alertUp && !root.open
                         visibleBottomLeft: win.faceCutoffLeftY
                         visibleBottomRight: win.faceCutoffRightY
                         visibleExtra: win.faceRevealLeft
@@ -2976,6 +2991,7 @@ Scope {
                 moving: settingsEnter.running || settingsExit.running || stage.flipping || ring.running || !win.visible
                 busy: PanelActivity.busy
                 turning: stage.flipping
+                turnHold: root.ringKeepsLite && ring.running
 
                 // Nothing on it takes a click until it has settled (or while it is going).
                 enabled: root.settingsOpen && stage.flip >= 1 && !stage.flipping

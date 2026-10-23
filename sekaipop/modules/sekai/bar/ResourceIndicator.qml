@@ -24,6 +24,12 @@ Item {
     // each one an icon over its number.
     property bool vertical: false
 
+    // Which edge the bar is on, so the hover tag opens towards the screen.
+    property string barPosition: "top"
+
+    // What the hover tag says.
+    readonly property string tipText: "CPU " + Math.round(root.cpuPercent) + "% · RAM " + Math.round(root.memPercent) + "%"
+
     signal clicked()
 
     // True once either figure is running hot enough to flag — used to
@@ -159,7 +165,16 @@ Item {
     MouseArea {
         id: area
         anchors.fill: parent
+        hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         onClicked: root.clicked()
+    }
+
+    // The hover tag (BarTip.qml): what the popup behind the click would tell you, at a glance.
+    BarTip {
+        shown: area.containsMouse
+        pressed: area.pressed
+        text: root.tipText
+        barPosition: root.barPosition
     }
 }

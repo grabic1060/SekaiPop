@@ -58,3 +58,9 @@ bash "$HOME/.config/quickshell/sekaipop/scripts/system/check-qml.sh" "$HOME/.con
 - [Qt Shader Tools qsb](https://doc.qt.io/qt-6/qtshadertools-qsb.html)
 - [Quickshell WlSessionLock](https://quickshell.org/docs/v0.3.0/types/Quickshell.Wayland/WlSessionLock/)
 - [UTM QEMU display](https://docs.getutm.app/settings-qemu/devices/display/)
+
+## 2026-10-23 최신 포크 병합 검증
+
+포크의 `6ba77ce`를 병합하면서 `install.sh`의 중첩 충돌 표시를 제거했습니다. Debian staging 검증 및 교체를 유지하고 최신 셸 재시작 기능의 `REPLACED` 상태를 성공적인 교체 뒤 설정합니다. 새 시각화 소스 4개도 같은 Qt qsb로 재빌드합니다(현재 소스 32개, 전체 번들 36개).
+
+ARM64 포팅 테스트 6개, 기존 업데이트 테스트, framing 25개 검사, battery-alert 및 bar-tip 테스트가 통과했습니다. Qt 6.8.2 셰이더 전체 검사와 Weston Wayland에서 병합된 전체 QML 컴파일, 수정 셸 스크립트 ShellCheck error 검사가 통과했습니다. 실제 UTM GPU 및 로그인/절전 검증의 기존 한계는 동일합니다.

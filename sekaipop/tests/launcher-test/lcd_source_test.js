@@ -42,7 +42,8 @@ assert.ok(/ClippingRectangle\s*\{/.test(lcd), "clipped with a ClippingRectangle,
 
 // ---------- cheap ----------
 assert.ok(!/ShaderEffect|MultiEffect|Behavior|Animation|Timer/.test(lcd), "static: no shader, effect or animation in it");
-assert.ok(/sourceSize\.height:\s*Math\.min\(\s*\d+\s*,/.test(lcd), "the wallpaper is decoded at the size it is drawn, with a ceiling")
+assert.ok(/FramedImage\s*\{[\s\S]{0,400}decodeScale:\s*lcd\.renderScale[\s\S]{0,200}maxDecode:\s*\d+/.test(lcd),
+          "the wallpaper is decoded at the size it is drawn (FramedImage, framed), with a ceiling")
 assert.ok(/lcd\.active\s*&&\s*lcd\.path/.test(lcd), "nothing is decoded while it is not active")
 
 // ---------- the mesh tile ----------

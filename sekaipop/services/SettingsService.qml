@@ -78,6 +78,8 @@ Singleton {
         // Hold announcements back (no popup / rising phone / buzz) while the focused monitor shows a fullscreen window. Same as do-not-disturb otherwise: they still land in the list, critical ones still break through.
         "notify.quietFullscreen": false,
         "notify.buzz": true,
+        // Low-battery notifications at 20 / 15 / 10 / 5 % while running on battery (services/BatteryAlertService.qml). A desktop with no battery never sees them.
+        "battery.alerts": true,
         "panel.hotEdge": true,
         "panel.hotDwell": 140,
         "panel.peek": 76,
@@ -96,6 +98,7 @@ Singleton {
         // What the phone's screens show behind them: "off", "desktop" or "picture";
         // "" = not chosen yet, launcher.lcdWallpaper decides (PanelImages.phoneMode).
         "phone.wallpaper": "",
+        "pictures.framing": "",         // JSON: which part of the banner / avatar / phone picture shows (PanelImages, Framing.js)
         "lock.blur": false,
         // The gacha lockscreen's endless sparkle animations. Off = they are not built, which saves GPU while locked.
         "lock.animations": true,

@@ -32,11 +32,6 @@ Scope {
     // and no network use until you press Enter.
     property bool webSuggestions: SettingsService.flag("launcher.webSuggestions")
 
-    // Start `wl-paste --watch cliphist store` ourselves so history is
-    // collected from the moment the shell starts. Turn off if your Hyprland
-    // config already runs it (harmless if both run -- cliphist de-duplicates
-    // -- but pointless).
-    property bool runClipboardWatcher: SettingsService.flag("launcher.clipboard")
 
     // ===== what the box asks for =====
     readonly property var routed: X.route(root.query)
@@ -192,15 +187,9 @@ Scope {
         onExited: (code, status) => root.clipAvailable = (code === 0)
     }
 
-    // Collect history from startup (text, and images).
-    Process {
-        running: root.runClipboardWatcher && root.clipAvailable
-        command: ["wl-paste", "--type", "text", "--watch", "cliphist", "store"]
-    }
-    Process {
-        running: root.runClipboardWatcher && root.clipAvailable
-        command: ["wl-paste", "--type", "image", "--watch", "cliphist", "store"]
-    }
+    // Collect history from startup (text, and images). One pair for the whole shell:
+    // ClipboardWatcher.qml (there are two launchers, each with an ExtrasSource).
+    readonly property bool clipWatching: ClipboardWatcher.watching
 
     function refreshClip() {
         if (!clipAvailable || clipList.running)

@@ -349,17 +349,9 @@ SettingsPage {
         SettingToggle {
             icon: "text_fields"
             label: "Word by word"
-            detail: "Light each word when it is sung, where a source has the timing"
+            detail: "Light each word when it is sung, where a source has the timing. Off lights the whole line at once"
             checked: LyricsService.wordsOn
             onToggled: LyricsService.setWords(!LyricsService.wordsOn)
-        }
-
-        SettingToggle {
-            icon: "format_align_center"
-            label: "Whole line only"
-            detail: "Light the whole line when it starts and jump to the next. No hopping words or bouncing diamond"
-            checked: LyricsService.lineOnly
-            onToggled: LyricsService.setLineOnly(!LyricsService.lineOnly)
         }
 
         SettingToggle {

@@ -134,6 +134,10 @@ Item {
     property bool moving: false
     property bool busy: false
     property bool turning: false
+    // The turn has landed but is still ringing out: keep the picture and the light settings of
+    // the turn (no input is blocked by this, unlike `turning`), so the phone is not redrawn
+    // bigger in the middle of the ring (QuickPanel.ringKeepsLite).
+    property bool turnHold: false
 
     // ===== what the others read =====
     readonly property alias phone: phone
@@ -317,7 +321,7 @@ Item {
             // (Drawn on the light settings while it straightens, too.)
             moving: root.moving || root.straightMoving
             busy: root.busy
-            turnRoll: root.turning ? 90 : 0
+            turnRoll: (root.turning || root.turnHold) ? 90 : 0
 
             // Standing straight and still: no side wall, and the screen goes
             // straight to the pixels (see `root.direct`).

@@ -279,7 +279,7 @@ PanelWindow {
 
     Process {
         running: true
-        command: ["hostname"]
+        command: ["uname", "-n"]   // `hostname` is not installed by default on Arch (inetutils)
         stdout: StdioCollector {
             onStreamFinished: win.hostName = text.trim()
         }
@@ -541,6 +541,9 @@ PanelWindow {
         readonly property var mt: Theme.of(QsWindow.window)
 
         property url source: ""
+        // Which part of it shows (PanelImages.framingFor: the same framing as the Quick
+        // Panel's, drawn into this slot's own shape); null = centred.
+        property var framing: null
         property real radius: 10                       // radius of this item's own edge (the outline's inner edge)
         property real bleed: 2                         // how far the picture runs under the outline
         property real frameWidth: mt.borderWidth    // the Pill's outline width
@@ -568,17 +571,14 @@ PanelWindow {
                 maskSource: photoMask
             }
 
-            Image {
+            FramedImage {
                 id: img
                 anchors.fill: parent
                 source: mp.source
-                fillMode: Image.PreserveAspectCrop
-                asynchronous: true
-                smooth: true
-                // Same size as the layer texture: one pixel of picture per
-                // texture pixel.
-                sourceSize: Qt.size(photoLayer.layer.textureSize.width,
-                                    photoLayer.layer.textureSize.height)
+                framing: mp.framing
+                clipped: false
+                // One pixel of picture per texture pixel, as the layer is drawn.
+                decodeScale: mp.texel * mp.oversample
             }
         }
 
@@ -936,6 +936,7 @@ PanelWindow {
                             id: bannerPhoto
                             anchors.fill: parent
                             source: PanelImages.banner
+                            framing: PanelImages.framingFor("banner")
                             radius: Math.max(0, banner.cornerRadius - banner.ringWidth)
                             frameWidth: banner.borderWidth
                             frameRadius: banner.cornerRadius
@@ -1047,6 +1048,7 @@ PanelWindow {
                                 id: avatarPhoto
                                 anchors.fill: parent
                                 source: PanelImages.avatar
+                            framing: PanelImages.framingFor("avatar")
                                 radius: Math.max(0, avatarPill.cornerRadius - avatarPill.ringWidth)
                                 frameWidth: avatarPill.borderWidth
                                 frameRadius: avatarPill.cornerRadius

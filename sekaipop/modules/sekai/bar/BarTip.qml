@@ -1,4 +1,5 @@
 import Quickshell
+import Quickshell.Io
 import QtQuick
 import qs.modules.common
 import qs.modules.common.widgets
@@ -26,6 +27,10 @@ Item {
     readonly property var mt: Theme.of(QsWindow.window)
 
     property bool shown: false
+    // Bind to the module's MouseArea.pressed: the tag is for hovering only, so any press
+    // (click, right-click, middle-click) puts it away, and it stays away until the pointer
+    // has left the module and come back.
+    property bool pressed: false
     property string text: ""
     property string barPosition: "top"
 
@@ -43,8 +48,103 @@ Item {
     readonly property bool facingVertical: root.barPosition === "left" || root.barPosition === "right"
 
 
+    // `shown` comes from a MouseArea's containsMouse, and that can stay true after the
+    // pointer has really left (a press that opens a popup / focus grab moves the pointer
+    // to another surface, and the bar never gets the hover-leave). The tag is its own
+    // window, so it then stays up until the shell is restarted. So while the tag is up
+    // the real cursor position is asked of Hyprland and checked against the module's box;
+    // the moment the pointer is outside it, the tag goes. Coming back brings it back.
+    // (If hyprctl is unavailable the answer is never read and `shown` rules, as before.)
+    property bool pointerOver: true
+    property bool dismissed: false
+
+    onShownChanged: {
+        if (shown)
+            root.pointerOver = true   // a fresh hover: the pointer is on the module
+        else
+            root.dismissed = false    // a real leave: the next hover may show it again
+    }
+
+    onPressedChanged: {
+        if (pressed)
+            root.dismissed = true
+    }
+
+    // Once the cursor has been seen outside the module, a press-dismissal is over too:
+    // coming back is a new hover (this is what lets a stale `shown` recover).
+    onPointerOverChanged: {
+        if (!pointerOver)
+            root.dismissed = false
+    }
+
+    function checkPointer(raw) {
+        if (!root.shown || !root.host)
+            return
+        let p
+        try {
+            p = JSON.parse(raw)
+        } catch (e) {
+            return
+        }
+        const win = root.barWindow
+        const scr = win ? win.screen : null
+        if (!scr || p.x === undefined || p.y === undefined)
+            return
+        // Hyprland gives the cursor in layout coordinates. The bar's window sticks to its
+        // own edge, so its corner is the screen's corner only for a top or left bar: a
+        // bottom bar's window starts (screen height - window height) down, a right bar's
+        // (screen width - window width) across. Taking the screen corner for those hid the
+        // tag the moment it appeared.
+        let ox = scr.x
+        let oy = scr.y
+        if (root.barPosition === "bottom")
+            oy += scr.height - win.height
+        else if (root.barPosition === "right")
+            ox += scr.width - win.width
+        const a = root.host.mapToItem(null, 0, 0)
+        const b = root.host.mapToItem(null, root.host.width, root.host.height)
+        const m = 2
+        const inside = p.x >= ox + a.x - m && p.x <= ox + b.x + m
+                    && p.y >= oy + a.y - m && p.y <= oy + b.y + m
+        // The module's own hover area only gets moves while the pointer really is on it,
+        // so a move a moment ago beats this guess (which can be off by a pixel or two, or
+        // read just before the pointer arrived): the tag is never taken away from a
+        // pointer that is visibly moving over the module.
+        root.pointerOver = inside || (Date.now() - root.lastMove < 350)
+    }
+
+    // When the pointer last moved over the module (a hover-only area laid over it; it takes
+    // no clicks, so the module's own area underneath still gets every press).
+    property double lastMove: 0
+
+    MouseArea {
+        width: root.host ? root.host.width : 0
+        height: root.host ? root.host.height : 0
+        hoverEnabled: true
+        acceptedButtons: Qt.NoButton
+        onPositionChanged: root.lastMove = Date.now()
+    }
+
+    Timer {
+        interval: 70
+        repeat: true
+        running: root.shown && root.text !== ""
+        onTriggered: {
+            if (!cursorProbe.running)
+                cursorProbe.running = true
+        }
+    }
+
+    Process {
+        id: cursorProbe
+        command: ["hyprctl", "-j", "cursorpos"]
+        stdout: StdioCollector {
+            onStreamFinished: root.checkPointer(text)
+        }
+    }
+
     // Fades in and out like before; the window is only mapped while it is visible.
-    property real fade: shown && text !== "" ? 1 : 0
+    property real fade: shown && pointerOver && !dismissed && text !== "" ? 1 : 0
     Behavior on fade {
         NumberAnimation { duration: 120 }
     }

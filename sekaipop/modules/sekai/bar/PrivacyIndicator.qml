@@ -166,9 +166,11 @@ Item {
         id: area
         anchors.fill: parent
         hoverEnabled: true
+        acceptedButtons: Qt.AllButtons
     }
     BarTip {
         shown: area.containsMouse
+        pressed: area.pressed
         text: root.detailText
         barPosition: root.barPosition
     }

@@ -24,6 +24,11 @@ GridLayout {
     property real keyHeight: 24
     property int iconSize: 20
 
+    // Hover tags with each key's name (the bar's pill; the flyout shows a caption instead) and
+    // the edge the bar is on, so they open towards the screen.
+    property bool tips: false
+    property string barPosition: "top"
+
     // A key that starts something (a picker, the recorder, the wallpapers) asks the
     // flyout to go away; a key that only flips a state (mic, dark mode...) does not,
     // so you can see it change.
@@ -47,6 +52,7 @@ GridLayout {
         label: "Screen snip"
         icon: "screenshot_region"
         keyWidth: grid.keyWidth; keyHeight: grid.keyHeight; iconSize: grid.iconSize
+        tip: grid.tips; barPosition: grid.barPosition
         onClicked: {
             grid.src.screenshotRegion()
             grid.closeRequested()
@@ -58,6 +64,7 @@ GridLayout {
         label: "Color picker"
         icon: "colorize"
         keyWidth: grid.keyWidth; keyHeight: grid.keyHeight; iconSize: grid.iconSize
+        tip: grid.tips; barPosition: grid.barPosition
         onClicked: {
             grid.src.pickColor()
             grid.closeRequested()
@@ -70,6 +77,7 @@ GridLayout {
         icon: "keyboard"
         active: KeyboardService.running
         keyWidth: grid.keyWidth; keyHeight: grid.keyHeight; iconSize: grid.iconSize
+        tip: grid.tips; barPosition: grid.barPosition
         onClicked: KeyboardService.toggle()
     }
 
@@ -79,6 +87,7 @@ GridLayout {
         icon: grid.src && grid.src.micMuted ? "mic_off" : "mic"
         active: grid.src ? grid.src.micMuted : false
         keyWidth: grid.keyWidth; keyHeight: grid.keyHeight; iconSize: grid.iconSize
+        tip: grid.tips; barPosition: grid.barPosition
         onClicked: grid.src.toggleMic()
     }
 
@@ -87,6 +96,7 @@ GridLayout {
         label: "Dark / light"
         icon: ThemeService.mode === "light" ? "light_mode" : (ThemeService.darker ? "bedtime" : "dark_mode")
         keyWidth: grid.keyWidth; keyHeight: grid.keyHeight; iconSize: grid.iconSize
+        tip: grid.tips; barPosition: grid.barPosition
         onClicked: grid.src.toggleDarkMode()
     }
 
@@ -96,6 +106,7 @@ GridLayout {
         icon: grid.src ? grid.src.profileIcon : "balance"
         active: grid.src ? grid.src.performanceOn : false
         keyWidth: grid.keyWidth; keyHeight: grid.keyHeight; iconSize: grid.iconSize
+        tip: grid.tips; barPosition: grid.barPosition
         onClicked: grid.src.cycleProfile()
     }
 
@@ -106,6 +117,7 @@ GridLayout {
         active: grid.src ? grid.src.recording : false
         activeFill: "#ff8fb3"
         keyWidth: grid.keyWidth; keyHeight: grid.keyHeight; iconSize: grid.iconSize
+        tip: grid.tips; barPosition: grid.barPosition
         onClicked: {
             grid.src.toggleRecording()
             grid.closeRequested()
@@ -117,6 +129,7 @@ GridLayout {
         label: "Wallpapers"
         icon: "wallpaper"
         keyWidth: grid.keyWidth; keyHeight: grid.keyHeight; iconSize: grid.iconSize
+        tip: grid.tips; barPosition: grid.barPosition
         onClicked: {
             grid.src.wallpapersRequested()
             grid.closeRequested()

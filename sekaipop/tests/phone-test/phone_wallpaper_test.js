@@ -55,7 +55,7 @@ assert.ok(/visible: PanelImages\.phoneMode === "picture"[\s\S]{0,400}PanelImages
 assert.ok(/wallpaperPath: PanelImages\.phoneWallpaperFor\(root\.targetScreen/.test(quick),
           "the Quick Panel feeds the Quick screen the same picture, for its monitor")
 assert.ok(!/^[^/\n]*PanelImages\.|import qs\.services/m.test(qpFace), "the face is handed the path; it doesn't look it up")
-assert.ok(/LauncherLcd \{[\s\S]{0,60}z: -10[\s\S]{0,400}path: face\.wallpaperPath[\s\S]{0,120}active: face\.visible/.test(qpFace),
+assert.ok(/LauncherLcd \{[\s\S]{0,60}z: -10[\s\S]{0,400}path: face\.wallpaperPath[\s\S]{0,200}active: face\.visible/.test(qpFace),
           "the same LCD under everything, only decoded while the screen shows")
 const fills = qpFace.match(/color: face\.wallOn \? Qt\.alpha\(/g) || []
 assert.strictEqual(fills.length, 2, "both cards (buttons, notifications) let the wallpaper through")

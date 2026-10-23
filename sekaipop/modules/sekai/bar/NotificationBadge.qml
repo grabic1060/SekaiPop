@@ -19,6 +19,12 @@ Item {
     property int count: 0
     property bool doNotDisturb: false
 
+    // Which edge the bar is on, so the hover tag opens towards the screen.
+    property string barPosition: "top"
+
+    // What the hover tag says.
+    readonly property string tipText: (root.count === 0 ? "No notifications" : root.count + (root.count === 1 ? " notification" : " notifications")) + (root.doNotDisturb ? " · do not disturb" : "")
+
     signal clicked()
 
     implicitWidth: mt.pillHeight
@@ -72,7 +78,16 @@ Item {
     MouseArea {
         id: area
         anchors.fill: parent
+        hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         onClicked: root.clicked()
+    }
+
+    // The hover tag (BarTip.qml): what the popup behind the click would tell you, at a glance.
+    BarTip {
+        shown: area.containsMouse
+        pressed: area.pressed
+        text: root.tipText
+        barPosition: root.barPosition
     }
 }

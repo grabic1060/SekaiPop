@@ -19,6 +19,7 @@ if command -v dpkg-query >/dev/null 2>&1; then
     [[ -z $runtime || $qt == "$runtime" ]] || { echo "qsb $qt does not match installed Qt $runtime" >&2; exit 1; }
 fi
 QSB="$QSB" bash "$RICE/shaders/compile-shaders.sh"
+QSB="$QSB" sh "$RICE/shaders/visualizer/build.sh"
 # Binary-only shaders must be readable by the target Qt too. No silent skip.
 count=0
 while IFS= read -r -d '' file; do

@@ -2,6 +2,8 @@ import QtQuick
 import Quickshell
 import Quickshell.Widgets
 import qs.modules.common
+import qs.modules.common.widgets
+import "../../common/functions/ImageMath.js" as IM
 
 // The Apps screen's wallpaper, drawn the way you picture an LCD: your wallpaper at
 // full brightness, seen through a fine pixel mesh (three thin red / green / blue
@@ -29,6 +31,8 @@ ClippingRectangle {
     // The picture to show, as a file path ("" = no LCD at all, the screen stays
     // plain white).
     property string path: ""
+    // Which part of it shows ({ zoom, panX, panY }, Framing.js); null = centred.
+    property var framing: null
     // Texels per design unit of the face (LauncherFace.renderScale): the picture is
     // decoded at about the size it ends up on the monitor, not at its own size.
     property real renderScale: 1
@@ -66,17 +70,17 @@ ClippingRectangle {
     visible: lcd.path !== ""
 
     // ===== the wallpaper =====
-    Image {
+    // Framed (null framing = centred, the cover crop it always had), decoded at about the
+    // size it is drawn (renderScale texels per design unit), never past 4096.
+    FramedImage {
         id: wall
 
         anchors.fill: parent
         source: lcd.active && lcd.path !== "" ? "file://" + lcd.path : ""
-        asynchronous: true
-        fillMode: Image.PreserveAspectCrop
-        smooth: true
-        // Decoded to the height it is drawn at (the width follows its shape). Some
-        // headroom is kept off 8K pictures.
-        sourceSize.height: Math.min(2400, Math.ceil(lcd.height * lcd.renderScale))
+        framing: lcd.framing
+        decodeScale: lcd.renderScale
+        // Some headroom is kept off 8K pictures, as before framing.
+        maxDecode: 2400
     }
 
     // ===== which ink reads over the picture =====
@@ -101,11 +105,13 @@ ClippingRectangle {
 
         // The picture, once it is in (and empty before / after, like the banner's).
         readonly property url src: wall.status === Image.Ready ? wall.source : ""
+        readonly property var framing: lcd.framing
 
         onSrcChanged: {
             if (src.toString() !== "")
                 requestPaint()
         }
+        onFramingChanged: requestPaint()
 
         // Average brightness (0 black .. 1 white, in linear light) of a rectangle of
         // the thumbnail.
@@ -128,23 +134,18 @@ ClippingRectangle {
         onPaint: {
             if (src.toString() === "")
                 return
-            const iw = wall.implicitWidth
-            const ih = wall.implicitHeight
-            if (iw <= 0 || ih <= 0)
+            if (!(wall.aspect > 0))
                 return
 
             const ctx = getContext("2d")
             ctx.clearRect(0, 0, width, height)
 
-            // Drawn the way the screen draws it (PreserveAspectCrop): scaled to cover
-            // the thumbnail, centred, the overflow cut off.
-            let dw = width
-            let dh = width * ih / iw
-            if (dh < height) {
-                dh = height
-                dw = height * iw / ih
-            }
-            ctx.drawImage(wall, (width - dw) / 2, (height - dh) / 2, dw, dh)
+            // Drawn the way the screen draws it: framed to cover the thumbnail, the
+            // overflow cut off.
+            const f = lcd.framing || {}
+            const r = IM.drawRect(width, height, wall.aspect * 1000, 1000, "crop",
+                                  f.zoom === undefined ? 1 : f.zoom, f.panX || 0, f.panY || 0)
+            ctx.drawImage(wall.image, r.x, r.y, r.w, r.h)
 
             // Under the clock + date: face x 67..190, y 36..90 = thumbnail x 5..17, y 2..7.
             // Under the speed readout: face x 437..587, y 38..90 = thumbnail x 42..57, y 2..7.

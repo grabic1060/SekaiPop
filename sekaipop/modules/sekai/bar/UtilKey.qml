@@ -26,6 +26,11 @@ Item {
     property string label: ""
     readonly property bool hovered: area.containsMouse
 
+    // The bar's own pill shows the key's name as a hover tag (tip: true, with the bar's edge so
+    // it opens towards the screen). The flyout keypad has a caption for that instead.
+    property bool tip: false
+    property string barPosition: "top"
+
     // The bar's pill uses 30 x 24 and a 20 px glyph; the flyout's keypad bigger ones.
     property real keyWidth: 30
     property real keyHeight: 24
@@ -73,5 +78,12 @@ Item {
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         onClicked: root.clicked()
+    }
+
+    BarTip {
+        shown: root.tip && area.containsMouse
+        pressed: area.pressed
+        text: root.label
+        barPosition: root.barPosition
     }
 }

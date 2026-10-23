@@ -1702,8 +1702,11 @@ PanelWindow {
         id: hotZone
         readonly property bool on: dockWindow.autoHideOn && !dockWindow.editing
         // Real pixels: how far the resting pill is from the window's edge, and how thick it is.
-             readonly property real gap: (dockWindow.position === "bottom" && !SettingsService.flag("panel.hotEdge"))
-          ? 0 : Math.round(dockWindow.innerGap * dockWindow.uiScale)
+             // Only a bottom dock with the Quick Panel's hot edge on keeps the strip off the edge;
+        // on any other edge the strip starts right at the screen edge, so the dock comes out
+        // when the pointer hits the edge, not 2-3 cm before it.
+        readonly property real gap: (dockWindow.position === "bottom" && SettingsService.flag("panel.hotEdge"))
+          ? Math.round(dockWindow.innerGap * dockWindow.uiScale) : 0
         // How deep the strip is: the pill's thickness at 100 % (the default), less when
         // Settings -> Desktop -> Dock -> "Reveal zone" is lowered, so a pointer working
         // near the edge (a chat box, a toolbar) does not bring the dock up. The strip

@@ -394,7 +394,7 @@ PanelWindow {
     Process {
         id: cava
         running: win.wantAudio && win.isSekai && !win.useAnalyzer
-        command: ["nice", "-n", "5", "cava", "-p", win.cavaConf]
+        command: ["setpriv", "--pdeathsig", "TERM", "nice", "-n", "5", "cava", "-p", win.cavaConf]
 
         stdout: SplitParser {
             onRead: data => levelEngine.raw = win.parseBands(data)
@@ -943,10 +943,11 @@ PanelWindow {
                                         }
                                     }
 
-                                    // (bars is plain QML and tide has its own shader above; the rest are end4-pC's shaders plus sekaipop's ribbons, scope and pulse)
+                                    // (bars is plain QML and tide has its own shader above; the rest are end4-pC's shaders plus sekaipop's ribbons, scope and pulse.
+                                    // The Sekai card has no shader: loading one for it asked for a sekai.frag.qsb that doesn't exist.)
                                     Loader {
                                         anchors.fill: parent
-                                        active: win.style !== "bars" && win.style !== "tide"
+                                        active: win.style !== "bars" && win.style !== "tide" && win.style !== "sekai"
                                         sourceComponent: ShaderVisualizerLayer {
                                             anchors.fill: parent
                                             style: win.style

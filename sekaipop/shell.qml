@@ -12,6 +12,7 @@ import qs.modules.sekai.desktopMenu
 import qs.modules.sekai.desktopWidgets
 import qs.modules.sekai.dock
 import qs.modules.sekai.editMode
+import qs.modules.sekai.framing
 import qs.modules.sekai.keyboard
 import qs.modules.sekai.launcher
 import qs.modules.sekai.lock
@@ -45,6 +46,20 @@ ShellRoot {
         id: wallpaperLayers
         model: Quickshell.screens
         WallpaperLayer {}
+    }
+
+    // The framer (PanelImages.frame(): which part of the banner, avatar or phone picture
+    // shows). Built only while a picture is being framed, on the monitor it was opened for.
+    Variants {
+        model: Quickshell.screens
+
+        delegate: LazyLoader {
+            id: framerLoader
+            required property var modelData
+            active: PanelImages.framing !== ""
+                && (PanelImages.framingScreen === "" || framerLoader.modelData.name === PanelImages.framingScreen)
+            FramerWindow { modelData: framerLoader.modelData }
+        }
     }
 
     // (The old wallpaper picker board is gone: the Wallpapers are a screen of the
@@ -231,6 +246,10 @@ ShellRoot {
     NotificationPopup {
         source: notificationState
     }
+
+    // Low-battery warnings (20 / 15 / 10 / 5 %), sent as notifications through the
+    // daemon above. Idle on a desktop with no battery. Settings > General > Time & alerts.
+    BatteryAlertService {}
 
     // The Quick Panel is the front door of the ONE phone (see QuickPanel.qml's
     // header): Quick, the Apps screen and the Settings live in it, behind one
@@ -616,6 +635,33 @@ ShellRoot {
         function hidemode(mode: string): void {
             if (mode === "off" || mode === "auto")
                 SettingsService.set("bar.hideMode", mode)
+        }
+    }
+
+    // The shell's own pictures (PanelImages.qml, docs/PICTURE-FRAMING.md).
+    //   qs -c sekaipop ipc call pictures pick banner|avatar|phone     open the chooser
+    //                                  | frame banner|avatar|phone    open the framer
+    //                                  | unframe banner|avatar|phone  back to centred
+    //                                  | close                        close the framer (as Cancel)
+    IpcHandler {
+        target: "pictures"
+
+        function pick(kind: string): void {
+            if (kind === "banner" || kind === "avatar" || kind === "phone")
+                PanelImages.pick(kind, "")
+        }
+
+        function frame(kind: string): void {
+            PanelImages.frame(kind, false, "")
+        }
+
+        function close(): void {
+            PanelImages.closeFramer(false)
+        }
+
+        function unframe(kind: string): void {
+            if (kind === "banner" || kind === "avatar" || kind === "phone")
+                PanelImages.setFraming(kind, null)
         }
     }
 
@@ -1239,12 +1285,12 @@ ShellRoot {
         // Look for the lyrics of what is playing again (skips the cache and the "nobody has
         // them" memory): after a wrong match, or once the network is back.
         function refresh(): void { LyricsService.refresh() }
-        // Word-by-word timing, like karaoke, where a source has it (on by default); `off` keeps
-        // the words of a line spread by their syllables.
+        // Word-by-word timing, like karaoke, where a source has it (on by default); `off`
+        // lights the whole line when it starts and jumps to the next one, no word hops.
         function words(on: bool): void { LyricsService.setWords(on) }
-        // Light the whole line when it starts and jump to the next one: no hopping words and no
-        // bouncing diamond (`off`: the word by word singing again). Only the line starts are used.
-        function lineMode(on: bool): void { LyricsService.setLineOnly(on) }
+        // Same switch as `words`, kept so an older keybind still works: `lineMode on` is
+        // Word by word off (the whole line lights at once), `lineMode off` is word by word.
+        function lineMode(on: bool): void { LyricsService.setWords(!on) }
         // Show nothing in the middle for "no synced lyrics" and "instrumental" songs; the title
         // under the card stays (`off`: the messages again).
         function hideNotes(on: bool): void { LyricsService.setHideNotes(on) }

@@ -48,13 +48,13 @@ Singleton {
     // Lyrics shown this many milliseconds early (+) or late (-) against the player's clock,
     // for a player (or a speaker) that is always a little off. ipc: lyrics nudgeAll <ms>.
     property int syncMs: 0
-    // Ask a karaoke source (NetEase) for when each WORD is sung, once the lines are found.
-    // Without it the words of a line are spread by their syllables. ipc lyrics words on|off
+    // Word by word: ask a karaoke source for when each WORD is sung and light the words as
+    // they are sung (hopping words, bouncing diamond). Off = the WHOLE line lights when it
+    // starts and the widget jumps to the next one; only the line starts are used, so a source
+    // whose word timing is a little off cannot look off. ipc lyrics words on|off
     property bool wordsOn: true
-    // Light the WHOLE line when it starts and jump to the next one: no hopping words, no
-    // bouncing diamond. Only the line starts are used, so a source whose word timing is a
-    // little off cannot look off. ipc lyrics lineMode on|off
-    property bool lineOnly: false
+    // Whole-line display is simply Word by word being off (there is no separate switch).
+    readonly property bool lineOnly: !root.wordsOn
     // Say nothing in the middle when a song has no synced lyrics or is an instrumental (the
     // track title under the card stays). ipc lyrics hideNotes on|off
     property bool hideNotes: false
@@ -222,10 +222,6 @@ Singleton {
         root.wordsOn = on === true
         root.persist()
         root.refresh()
-    }
-    function setLineOnly(on) {
-        root.lineOnly = on === true
-        root.persist()
     }
     function setHideNotes(on) {
         root.hideNotes = on === true
@@ -1184,7 +1180,6 @@ Singleton {
             shown: root.shown,
             syncMs: root.syncMs,
             wordsOn: root.wordsOn,
-            lineOnly: root.lineOnly,
             hideNotes: root.hideNotes,
             source: root.preferred,
             offsets: root.offsets
@@ -1206,8 +1201,9 @@ Singleton {
             root.shown = s.shown === true
             if (typeof s.wordsOn === "boolean")
                 root.wordsOn = s.wordsOn
-            if (typeof s.lineOnly === "boolean")
-                root.lineOnly = s.lineOnly
+            // An older state had a separate "whole line only" switch: it now means Word by word off.
+            if (s.lineOnly === true)
+                root.wordsOn = false
             if (typeof s.hideNotes === "boolean")
                 root.hideNotes = s.hideNotes
             if (typeof s.source === "string" && (s.source === "auto" || root.providerIds.indexOf(s.source) >= 0))

@@ -27,7 +27,7 @@ ok(seen.size === 5, 'unlisted names spread over all five colours');
 // call sites: every notify-send the shell makes itself carries a known glyph
 const files = ['modules/common/functions/Extras.js', 'modules/sekai/bar/UtilButtons.qml', 'services/QuickSource.qml', 'services/KeyboardService.qml',
   'services/RegionService.qml', 'services/DesktopPresetService.qml', 'services/PackageUpdatesService.qml',
-  'services/ScrollOverviewService.qml', 'services/TimerService.qml', 'scripts/system/region-action.sh'];
+  'services/ScrollOverviewService.qml', 'services/TimerService.qml', 'services/BatteryAlertService.qml', 'scripts/system/region-action.sh'];
 let calls = 0;
 for (const f of files) {
   const t = fs.readFileSync(path.join(root, f), 'utf8');
