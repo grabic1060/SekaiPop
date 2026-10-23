@@ -15,7 +15,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-QSB=qsb
+QSB=${QSB:-qsb}
 if ! command -v "$QSB" >/dev/null 2>&1; then
     for candidate in /usr/lib/qt6/bin/qsb /usr/lib/qt6-shadertools/bin/qsb; do
         if [ -x "$candidate" ]; then

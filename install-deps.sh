@@ -24,6 +24,11 @@
 # Run as your normal user (it uses sudo where needed). Run ./check-deps.sh afterwards.
 
 set -u
+HERE=$(cd "$(dirname "$0")" && pwd)
+if [ -r /etc/os-release ]; then
+    . /etc/os-release
+    if [ "${ID:-}" = debian ]; then exec bash "$HERE/install/debian.sh" "$@"; fi
+fi
 
 DRY=0; YES=0; CORE_ONLY=0; WITH_OPT=0; DESKTOP=1; GPU=auto; DDC=0; FM=auto
 UPDATE=1; AUR=1; SERVICES=1; FONTS=1; SESSION=1

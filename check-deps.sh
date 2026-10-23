@@ -14,6 +14,12 @@
 # Package names are for Arch / AUR. On other distros read them as hints.
 
 set -u
+if [ -r /etc/os-release ]; then
+    . /etc/os-release
+    if [ "${ID:-}" = debian ]; then
+        exec bash "$(cd "$(dirname "$0")" && pwd)/install/check-debian.sh" "$@"
+    fi
+fi
 
 ONLY_CORE=0
 COLOR=1
@@ -165,8 +171,7 @@ fi
 # --------------------------------------------------------------------------
 section "Quickshell and Qt 6"
 # --------------------------------------------------------------------------
-cmd 1 qs quickshell pac "also: quickshell"
-cmd 1 quickshell quickshell pac
+any 1 "Quickshell executable" quickshell pac qs quickshell
 if have qs || have quickshell; then
     for m in Quickshell/Hyprland Quickshell/Wayland Quickshell/Io Quickshell/Widgets \
              Quickshell/Services/Pam Quickshell/Services/Polkit Quickshell/Services/Notifications \

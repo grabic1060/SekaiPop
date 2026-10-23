@@ -25,6 +25,9 @@ import qs.modules.common
 Singleton {
     id: root
 
+    property string backend: "unknown"
+    property double indexAt: 0
+    property int heldCount: 0
     property int repoCount: 0
     property int aurCount: 0
     readonly property int total: root.repoCount + root.aurCount
@@ -69,11 +72,15 @@ Singleton {
     // "3 repo · 1 AUR" for the tag and the Settings page.
     readonly property string breakdown: {
         if (root.status === "nocmd")
-            return "checkupdates not found (install pacman-contrib)"
+            return root.backend === "apt" ? "APT is unavailable" : "checkupdates not found (install pacman-contrib)"
         if (root.status === "error")
             return "couldn't check for updates"
         if (root.status === "idle" || (root.status === "checking" && root.checkedAt === 0))
             return "checking…"
+        if (root.backend === "apt") {
+            const cache = root.indexAt > 0 ? "index " + new Date(root.indexAt * 1000).toLocaleString() : "index age unknown"
+            return root.repoCount + " APT · " + cache + (root.heldCount ? " · " + root.heldCount + " held" : "")
+        }
         if (root.total === 0)
             return "up to date"
         const parts = [root.repoCount + " repo"]
@@ -96,7 +103,10 @@ Singleton {
                     if (i < 0)
                         continue
                     const k = line.slice(0, i), v = line.slice(i + 1).trim()
-                    if (k === "status") status = v
+                    if (k === "backend") root.backend = v
+                    else if (k === "index_at") root.indexAt = Number(v) || 0
+                    else if (k === "held") root.heldCount = Number(v) || 0
+                    else if (k === "status") status = v
                     else if (k === "repo") repo = Number(v) || 0
                     else if (k === "aur") aur = Number(v) || 0
                     else if (k === "pkg") pk.push(v)
@@ -154,20 +164,18 @@ Singleton {
     }
 
     // ===== running the update =====
-    readonly property string updateScript:
-        "checkupdates 2>/dev/null; echo; "
-        + "if command -v paru >/dev/null 2>&1; then paru; "
-        + "elif command -v yay >/dev/null 2>&1; then yay; "
-        + "else sudo pacman -Syu; fi; "
-        + "echo; printf 'Press Enter to close '; read _"
-
+    // Pass the script as an argv item; paths containing quotes/spaces remain safe.
     function terminalCommand() {
         const t = SettingsService.get("updates.terminal")
-        if (t === "foot")
-            return ["foot", "sh", "-c", root.updateScript]
-        if (t === "alacritty")
-            return ["alacritty", "-e", "sh", "-c", root.updateScript]
-        return ["kitty", "sh", "-c", root.updateScript]
+        if (t === "foot") return ["foot", "sh", root.script, "run"]
+        if (t === "alacritty") return ["alacritty", "-e", "sh", root.script, "run"]
+        return ["kitty", "sh", root.script, "run"]
+    }
+
+    Process {
+        running: true
+        command: ["sh", root.script, "backend"]
+        stdout: StdioCollector { onStreamFinished: root.backend = text.trim() }
     }
 
     readonly property bool upgrading: upgrader.running

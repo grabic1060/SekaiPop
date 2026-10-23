@@ -1,3 +1,5 @@
+> **Debian 13 ARM64 / UTM port:** Run `bash get.sh --utm` from this modified checkout inside Debian. See [installation instructions](docs/DEBIAN-ARM64.md) and [validation limits](docs/DEBIAN-ARM64-VALIDATION.md). The upstream remote installer does not include this unpublished port.
+
 <div align="center">
 
 <h1>SekaiPop</h1>
