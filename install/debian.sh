@@ -32,6 +32,9 @@ if ((!CORE_ONLY)); then
     WANT+=("${DEBIAN_FEATURES[@]}")
     if ((DESKTOP)); then
         WANT+=("${DEBIAN_DESKTOP[@]}")
+        if [[ ! -s /etc/X11/default-display-manager && ! -e /etc/systemd/system/display-manager.service ]] || [[ $(cat /etc/X11/default-display-manager 2>/dev/null) == /usr/sbin/lightdm ]]; then
+            WANT+=(lightdm lightdm-gtk-greeter xserver-xorg xserver-xorg-input-libinput xauth)
+        fi
         [[ $FM != auto ]] || { if command -v dolphin >/dev/null; then FM=dolphin; else FM=thunar; fi; }
         case "$FM" in dolphin) WANT+=(dolphin kio-extras ffmpegthumbs kde-style-breeze);; thunar) WANT+=(thunar thunar-volman tumbler);; esac
     fi
@@ -80,6 +83,9 @@ if ((SERVICES)); then
             run systemctl --user enable --now pipewire.socket pipewire-pulse.socket wireplumber.service
         else echo 'No user bus: activate PipeWire after logging in to Hyprland.'; fi
     else echo 'No running systemd session: services will be checked at desktop login.'; fi
+fi
+if ((SERVICES && DESKTOP && !CORE_ONLY)); then
+    run bash "$HERE/display-manager.sh" "$DRY"
 fi
 if ((DDC)); then
     run sudo groupadd -f i2c

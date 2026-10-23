@@ -22,6 +22,9 @@ for family in 'Google Sans Flex' 'Material Symbols Rounded'; do
     if ! fc-list -f '%{family}\n' 2>/dev/null | grep -F "$family" >/dev/null; then echo "Missing font: $family (bash install/fonts.sh)"; fail=$((fail+1)); fi
 done
 if ! bash "$HERE/../sekaipop/scripts/system/check-qml.sh"; then fail=$((fail+1)); fi
+if [[ ! -e /etc/systemd/system/display-manager.service ]]; then
+    echo 'No enabled graphical login manager. Full Debian installation configures LightDM; TTY-only installs require starting Hyprland manually.'
+fi
 if ((!CORE_ONLY)); then
     for p in "${DEBIAN_DESKTOP[@]}" "${DEBIAN_FEATURES[@]}"; do
         [[ $(dpkg-query -W -f='${Status}' "$p" 2>/dev/null) == 'install ok installed' ]] || echo "Feature package missing: $p"

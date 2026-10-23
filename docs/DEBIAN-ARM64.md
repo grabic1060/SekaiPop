@@ -16,7 +16,7 @@ bash get.sh --utm
 bash get.sh --utm --dry-run
 ```
 
-질문 없이 기본 전체 설정으로 설치하려면 `bash get.sh --utm --yes`를 사용합니다. 기존 Hyprland 설정을 유지하려면 `bash get.sh --utm --hypr merge`를 사용합니다. 설치 후 로그아웃하고 로그인 화면에서 일반 **Hyprland** 세션을 선택합니다. 디스플레이 매니저가 없는 TTY 환경에서는 로그인한 일반 사용자로 `Hyprland`를 실행합니다.
+질문 없이 기본 전체 설정으로 설치하려면 `bash get.sh --utm --yes`를 사용합니다. 기존 Hyprland 설정을 유지하려면 `bash get.sh --utm --hypr merge`를 사용합니다. 기본 전체 설치는 로그인 매니저가 없는 CLI 시스템에 LightDM과 Xorg를 설치하고 graphical.target 부팅을 설정합니다. 설치 후 재부팅하고 로그인 화면에서 일반 **Hyprland** 세션을 선택합니다. 디스플레이 매니저가 없는 TTY 환경에서는 로그인한 일반 사용자로 `Hyprland`를 실행합니다.
 
 원본 저장소의 기존 원격 설치 URL에는 아직 이 포트가 배포되지 않았습니다. 현재는 변경된 로컬 체크아웃의 `get.sh`를 실행해야 합니다. 수정된 체크아웃은 자동 업데이트를 비활성화하여 원본 Arch 버전으로 되돌아가는 것을 막습니다. 갱신은 이 포트의 새 체크아웃에서 같은 설치 명령을 다시 실행합니다.
 
@@ -62,3 +62,9 @@ bash install.sh --restore
 이 복구는 Hyprland 설정 대상입니다. APT 패키지, 저장소, 서비스, 폰트와 셸 전체를 제거하는 명령은 아닙니다.
 
 실제 UTM에서는 첫 로그인 후 화면 출력·해상도 변경·패널·오디오·포털 화면 공유·PAM 잠금 해제·절전 복귀를 확인해야 합니다. 실패 시 `~/.cache/sekaipop/hypr-errors.log`, Hyprland 로그 및 `qs -c sekaipop`의 출력을 확인합니다.
+
+## CLI 설치 후 로그인 화면이 없었던 경우
+
+이전 설치기는 디스플레이 매니저를 설치하지 않았습니다. 수정된 체크아웃에서 `bash get.sh --utm --yes`를 다시 실행하고 재부팅하십시오. 기존 매니저가 있으면 교체하지 않으며, `--no-services`, `--core-only`, `--no-desktop-layer`는 자동 그래픽 로그인 구성을 생략합니다. LightDM의 로그인 화면은 Xorg를 사용하고 선택한 Hyprland 데스크톱은 Wayland로 실행됩니다.
+
+TTY에서 진단할 때는 `systemctl get-default`, `systemctl status display-manager`, `journalctl -b -u lightdm`을 확인하십시오. 설치기는 실행 중인 TTY를 끊지 않도록 LightDM을 즉시 시작하지 않습니다.
